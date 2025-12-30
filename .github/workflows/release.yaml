@@ -13,7 +13,7 @@ concurrency: release
 
 jobs:
   # ------------------------------------------------------------
-  # Job 1: Snapshot metadata + normalized image repo
+  # Job 1: Setup - Define Metadata AND Arch list here
   # ------------------------------------------------------------
   setup:
     name: Setup
@@ -22,26 +22,28 @@ jobs:
       snapshot-date: ${{ steps.snapshot.outputs.date }}
       snapshot-epoch: ${{ steps.snapshot.outputs.epoch }}
       image-repo: ${{ steps.snapshot.outputs.image_repo }}
+      # Define the suffixes here so we only change it in one place if we add more
+      arch-suffixes: "amd64 arm64 arm"
     steps:
       - id: snapshot
         run: |
           echo "date=$(date -u +%Y%m%d)" >> $GITHUB_OUTPUT
           echo "epoch=$(date +%s)" >> $GITHUB_OUTPUT
           echo "image_repo=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+          # We don't need to echo arch-suffixes to output because we hardcoded it in the yaml outputs above,
+          # but if you wanted it dynamic you could echo it here.
 
   # ------------------------------------------------------------
-  # Job 2: Build & push per-arch images
+  # Job 2: Build (Unchanged, but for context)
   # ------------------------------------------------------------
   build:
     name: Build & Push (${{ matrix.arch }})
     needs: setup
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       packages: write
       id-token: write
-
     strategy:
       fail-fast: false
       matrix:
@@ -52,21 +54,16 @@ jobs:
             tag_suffix: arm64
           - arch: armv7
             tag_suffix: arm
-
     steps:
       - uses: actions/checkout@v6.0.1
       - uses: docker/setup-qemu-action@v3.7.0
       - uses: sigstore/cosign-installer@v4.0.0
-
       - uses: chainguard-dev/actions/melange-build@v1.5.10
         with:
           sign-with-temporary-key: true
           signing-key-path: melange.rsa
           config: melange.yaml
           archs: ${{ matrix.arch }}
-
-      # FIX 1: Remove the suffix here. Apko adds the arch automatically.
-      # This prevents "...-amd64-amd64"
       - uses: chainguard-images/actions/apko-build@v1.0.11
         with:
           config: apko.yaml
@@ -74,38 +71,23 @@ jobs:
           keyring-append: melange.rsa.pub
           archs: ${{ matrix.arch }}
           source-date-epoch: ${{ needs.setup.outputs.snapshot-epoch }}
-
       - name: Login to GHCR
         run: echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      # FIX 2: Dynamic Retagging
-      # 1. Load the image and grab the tag name Apko generated (e.g., ...-armv7)
-      # 2. Retag it to the name defined in your matrix (e.g., ...-arm)
-      # 3. Push the matrix name
       - name: Push image
         run: |
-          # Load image and capture output
           LOAD_OUTPUT=$(docker load < output.tar)
-          echo "$LOAD_OUTPUT"
-          
-          # Extract the loaded tag (Format: "Loaded image: repo:tag")
           LOADED_TAG=$(echo "$LOAD_OUTPUT" | grep "Loaded image" | cut -d' ' -f3)
-          
-          # Define the target tag based on your matrix
           TARGET_TAG="${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }}-${{ matrix.tag_suffix }}"
-          
-          # Retag and Push
           docker tag "$LOADED_TAG" "$TARGET_TAG"
           docker push "$TARGET_TAG"
 
   # ------------------------------------------------------------
-  # Job 3: Create & push multi-arch manifest
+  # Job 3: Manifest - Dynamic Looping
   # ------------------------------------------------------------
   manifest:
     name: Publish multi-arch manifest
     needs: [setup, build]
     runs-on: ubuntu-latest
-
     permissions:
       packages: write
       id-token: write
@@ -114,21 +96,44 @@ jobs:
       - name: Login to GHCR
         run: echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Create manifest
+      - name: Create and Push Manifests
+        env:
+          # Pull inputs from setup job
+          REPO: ${{ needs.setup.outputs.image-repo }}
+          DATE_TAG: ${{ needs.setup.outputs.snapshot-date }}
+          SUFFIXES: ${{ needs.setup.outputs.arch-suffixes }} # "amd64 arm64 arm"
         run: |
-          docker manifest create ${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }} \
-            ${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }}-amd64 \
-            ${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }}-arm64 \
-            ${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }}-arm
+          # 1. Construct the list of source images dynamically
+          # Result example: "repo:date-amd64 repo:date-arm64 repo:date-arm"
+          SOURCE_IMAGES=""
+          for suffix in $SUFFIXES; do
+            SOURCE_IMAGES="$SOURCE_IMAGES $REPO:$DATE_TAG-$suffix"
+          done
 
-          docker manifest annotate ${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }} \
-            ${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }}-arm \
-            --os linux --arch arm --variant v7
+          # 2. Define the target tags we want to create (Date AND Latest)
+          TARGETS="$REPO:$DATE_TAG $REPO:latest"
 
-          docker manifest push ${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }}
+          # 3. Loop through targets to create, annotate, and push
+          for target in $TARGETS; do
+            echo "Creating manifest for $target..."
+            
+            # Create the manifest
+            # $SOURCE_IMAGES expands to the list of 3 images we built
+            docker manifest create $target $SOURCE_IMAGES
+
+            # Special Annotation for ARMv7
+            # We explicitly check if 'arm' was in our suffixes list to ensure safety
+            if [[ "$SUFFIXES" == *"arm"* ]]; then
+               echo "Annotating armv7..."
+               docker manifest annotate $target $REPO:$DATE_TAG-arm --os linux --arch arm --variant v7
+            fi
+
+            # Push
+            docker manifest push $target
+          done
 
   # ------------------------------------------------------------
-  # Job 4: Generate README
+  # Job 4: Generate README (Use the template method discussed)
   # ------------------------------------------------------------
   generate-readme:
     name: Generate README
@@ -136,10 +141,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - uses: actions/checkout@v6.0.1
-
       - name: Generate README from template
         env:
           GITHUB_REPO: ${{ github.repository }}
@@ -148,10 +151,7 @@ jobs:
           TAG: ${{ needs.setup.outputs.snapshot-date }}
           DESCRIPTION: "Hello, world!"
           WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/workflows/release.yaml"
-        run: |
-          # Read the template, replace variables, overwrite README.md
-          envsubst < .github/README.tpl.md > README.md
-
+        run: envsubst < .github/README.tpl.md > README.md
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "docs: update README for release ${{ needs.setup.outputs.snapshot-date }}"
