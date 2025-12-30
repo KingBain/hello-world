@@ -48,7 +48,7 @@ jobs:
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@0.33.1
       with:
-        image-ref: hello-world:${{ steps.snapshot-date.outputs.date }}
+        image-ref: hello-world:${{ steps.snapshot-date.outputs.date }}-amd64
         exit-code: '1'
         ignore-unfixed: true
         vuln-type: 'os,library'
