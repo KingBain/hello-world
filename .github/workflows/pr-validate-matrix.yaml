@@ -66,15 +66,25 @@ jobs:
           archs: ${{ matrix.arch }}
           source-date-epoch: ${{ needs.setup.outputs.snapshot-epoch }}
 
+      - name: Load image
+        run: docker load < output.tar
+        
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@v0.33.1
+        uses: aquasecurity/trivy-action@0.33.1
         with:
-          input: ./output.tar
-          exit-code: '1'
+          image-ref: hello-world:${{ needs.setup.outputs.snapshot-date }}
+          scanners: vuln
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
           ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
-          format: 'table'
+          format: sarif
+          output: trivy-results-${{ matrix.arch }}.sarif
+          exit-code: '1'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4.31.9
+        with:
+          sarif_file: trivy-results-${{ matrix.arch }}.sarif
 
       # Upload the individual tarball, named by architecture
       - uses: actions/upload-artifact@v6
