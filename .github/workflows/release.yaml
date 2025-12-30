@@ -5,10 +5,8 @@ on:
     branches: [main]
     paths-ignore:
       - README.md
-
   schedule:
     - cron: '0 0 * * *'
-
   workflow_dispatch: {}
 
 concurrency: release
@@ -57,14 +55,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6.0.1
-
       - uses: docker/setup-qemu-action@v3.7.0
-
       - uses: sigstore/cosign-installer@v4.0.0
 
-      # --------------------------------------------------------
-      # Build APKs (single arch)
-      # --------------------------------------------------------
       - uses: chainguard-dev/actions/melange-build@v1.5.10
         with:
           sign-with-temporary-key: true
@@ -72,27 +65,38 @@ jobs:
           config: melange.yaml
           archs: ${{ matrix.arch }}
 
-      # --------------------------------------------------------
-      # Build OCI image (single arch)
-      # --------------------------------------------------------
+      # FIX 1: Remove the suffix here. Apko adds the arch automatically.
+      # This prevents "...-amd64-amd64"
       - uses: chainguard-images/actions/apko-build@v1.0.11
         with:
           config: apko.yaml
-          tag: ${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }}-${{ matrix.tag_suffix }}
+          tag: ${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }}
           keyring-append: melange.rsa.pub
           archs: ${{ matrix.arch }}
           source-date-epoch: ${{ needs.setup.outputs.snapshot-epoch }}
 
-      # --------------------------------------------------------
-      # Push image
-      # --------------------------------------------------------
       - name: Login to GHCR
         run: echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+      # FIX 2: Dynamic Retagging
+      # 1. Load the image and grab the tag name Apko generated (e.g., ...-armv7)
+      # 2. Retag it to the name defined in your matrix (e.g., ...-arm)
+      # 3. Push the matrix name
       - name: Push image
         run: |
-          docker load < output.tar
-          docker push ${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }}-${{ matrix.tag_suffix }}
+          # Load image and capture output
+          LOAD_OUTPUT=$(docker load < output.tar)
+          echo "$LOAD_OUTPUT"
+          
+          # Extract the loaded tag (Format: "Loaded image: repo:tag")
+          LOADED_TAG=$(echo "$LOAD_OUTPUT" | grep "Loaded image" | cut -d' ' -f3)
+          
+          # Define the target tag based on your matrix
+          TARGET_TAG="${{ needs.setup.outputs.image-repo }}:${{ needs.setup.outputs.snapshot-date }}-${{ matrix.tag_suffix }}"
+          
+          # Retag and Push
+          docker tag "$LOADED_TAG" "$TARGET_TAG"
+          docker push "$TARGET_TAG"
 
   # ------------------------------------------------------------
   # Job 3: Create & push multi-arch manifest
