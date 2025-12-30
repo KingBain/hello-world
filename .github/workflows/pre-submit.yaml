@@ -9,15 +9,14 @@ jobs:
     name: Build hello-world OCI image
     runs-on: ubuntu-latest
 
-    # https://docs.github.com/en/actions/reference/authentication-in-a-workflow
     permissions:
       contents: read
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6.0.1
 
     - name: Setup QEMU
-      uses: docker/setup-qemu-action@v2.1.0
+      uses: docker/setup-qemu-action@v3.7.0
 
     - name: Generate snapshot date
       id: snapshot-date
@@ -25,46 +24,14 @@ jobs:
         echo "date=$(date -u +%Y%m%d)" >> $GITHUB_OUTPUT
       shell: bash
 
-    - uses: sigstore/cosign-installer@main
-
-    - name: Generate Melange Keypair
-      run: |
-        # Generate key using the melange container
-        # Added '-w /work' to ensure keys are written to the mounted volume
-        docker run --rm -v "${PWD}:/work" -w /work cgr.dev/chainguard/melange keygen
-        
-        # Ensure the current runner user owns the keys (docker creates them as root)
-        sudo chown $USER melange.rsa melange.rsa.pub
-        
-        # Verify the file exists (for debugging logs)
-        ls -l melange.rsa.pub
+    - uses: sigstore/cosign-installer@4
 
     - uses: chainguard-dev/actions/melange-build@main
       with:
-        sign-with-temporary-key: false   # Disable auto-generation
-        signing-key-path: melange.rsa    # Use our explicit key
+        sign-with-temporary-key: true
+        signing-key-path: melange.rsa
         config: melange.yaml
         archs: x86_64
-
-    - name: Fix Package Permissions & Debug
-      run: |
-        # Melange runs as root, so we must claim the packages folder
-        sudo chown -R $USER packages
-        
-        # DEBUG: Verify the index is signed
-        echo "Checking content of x86_64 index:"
-        tar -tvf packages/x86_64/APKINDEX.tar.gz
-
-    - name: Sign Packages & Index
-      run: |
-        for arch in x86_64; do
-          echo "Signing index for $arch..."
-          docker run --rm -v "${PWD}:/work" -w /work \
-            cgr.dev/chainguard/melange index \
-            -o packages/$arch/APKINDEX.tar.gz \
-            packages/$arch/*.apk \
-            --signing-key melange.rsa
-        done
 
     - uses: chainguard-images/actions/apko-build@main
       with:
@@ -74,7 +41,7 @@ jobs:
         archs: x86_64
         source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: hello-world.tar
         path: ./output.tar
