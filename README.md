@@ -10,20 +10,20 @@ Hello, world!
 
 ## Get It!
 
-The image is available on \`ghcr.io\`:
+The image is available on `ghcr.io`:
 
-\`\`\`bash
+```bash
 docker pull ghcr.io/kingbain/hello-world:20251230
-\`\`\`
+```
 
 ## Supported tags
 
 | Tag | Arch |
 | --- | ---- |
-| \`20251230\` | \`amd64\` \`arm64\` \`arm\` |
-| \`20251230-amd64\` | \`amd64\` |
-| \`20251230-arm64\` | \`arm64\` |
-| \`20251230-arm\` | \`arm\` |
+| `20251230` | `amd64` `arm64` `arm` |
+| `20251230-amd64` | `amd64` |
+| `20251230-arm64` | `arm64` |
+| `20251230-arm` | `arm` |
 
 ## Signing
 
@@ -33,11 +33,11 @@ All Chainguard Images are signed using [Sigstore](https://sigstore.dev)!
 <br/>
 To verify the image, download <a href="https://github.com/sigstore/cosign">cosign</a> and run:
 
-\`\`\`bash
+```bash
 COSIGN_EXPERIMENTAL=1 cosign verify ghcr.io/kingbain/hello-world:20251230 | jq
-\`\`\`
+```
 
-> **Note:** The output will contain the specific digest and signature information for the build timestamped \`20251230\`.
+> **Note:** The output will contain the specific digest and signature information for the build timestamped `20251230`.
 </details>
 
 ## Build
