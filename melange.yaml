@@ -24,14 +24,8 @@ environment:
       - ssl_client
       - ca-certificates-bundle
 
+
 pipeline:
-  - name: Build Static
-    runs: |
-      gcc -static -o hello hello.c
-
-  - name: Install
-    runs: |
-      mkdir -p "${{targets.destdir}}/usr/bin"
-      install -Dm755 hello "${{targets.destdir}}/usr/bin/hello"
-
+  - uses: autoconf/make
+  - uses: autoconf/make-install
   - uses: strip
