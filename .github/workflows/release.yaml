@@ -154,7 +154,7 @@ jobs:
           DESCRIPTION: "Hello, world!"
           WORKFLOW_URL: "${{ github.server_url }}/${{ github.repository }}/actions/workflows/release.yaml"
         run: envsubst < .github/README.tpl.md > README.md
-      - uses: stefanzweifel/git-auto-commit-action@v5
+      - uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7
         with:
           commit_message: "docs: update README for release ${{ needs.setup.outputs.snapshot-date }}"
           file_pattern: README.md
