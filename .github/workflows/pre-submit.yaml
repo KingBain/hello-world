@@ -55,6 +55,17 @@ jobs:
         echo "Checking content of x86_64 index:"
         tar -tvf packages/x86_64/APKINDEX.tar.gz
 
+    - name: Sign Packages & Index
+      run: |
+        for arch in x86_64; do
+          echo "Signing index for $arch..."
+          docker run --rm -v "${PWD}:/work" -w /work \
+            cgr.dev/chainguard/melange index \
+            -o packages/$arch/APKINDEX.tar.gz \
+            packages/$arch/*.apk \
+            --signing-key melange.rsa
+        done
+
     - uses: chainguard-images/actions/apko-build@main
       with:
         config: apko.yaml
