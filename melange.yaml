@@ -3,8 +3,6 @@ package:
   version: 0
   epoch: 0
   description: "a hello world program"
-  target-architecture:
-    - all
   copyright:
     - paths:
       - "*"
@@ -27,7 +25,13 @@ environment:
       - ca-certificates-bundle
 
 pipeline:
-  - uses: autoconf/make
-  - uses: autoconf/make-install
-  - uses: strip
+  - name: Build Static
+    runs: |
+      gcc -static -o hello hello.c
 
+  - name: Install
+    runs: |
+      mkdir -p "${{targets.destdir}}/usr/bin"
+      install -Dm755 hello "${{targets.destdir}}/usr/bin/hello"
+
+  - uses: strip
