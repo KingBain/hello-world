@@ -27,9 +27,18 @@ jobs:
 
 
     - uses: sigstore/cosign-installer@main
+
+    - name: Generate Melange Keypair
+      run: |
+        # Generate key using the melange container
+        docker run --rm -v "${PWD}:/work" cgr.dev/chainguard/melange keygen
+        # Ensure the current runner user owns the keys (docker creates them as root)
+        sudo chown $USER melange.rsa melange.rsa.pub
+
     - uses: chainguard-dev/actions/melange-build@main
       with:
-        sign-with-temporary-key: true
+        sign-with-temporary-key: false   # Disable auto-generation
+        signing-key-path: melange.rsa    # Use our explicit key
         config: melange.yaml
         archs: x86_64,aarch64,armv7
 
