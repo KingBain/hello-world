@@ -145,7 +145,7 @@ jobs:
       - name: Get repo name
         run: echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
 
-      - uses: amouat/readme-generator@main
+      - uses: jdolitsky/readme-generator@main
         with:
           repo: https://github.com/${{ github.repository }}
           name: ${{ env.REPO_NAME }}
