@@ -6,6 +6,7 @@ contents:
     - ca-certificates-bundle
     - alpine-baselayout-data
     - hello@local
+    - musl 
 
 accounts:
   groups:
