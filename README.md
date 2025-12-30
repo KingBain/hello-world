@@ -1,10 +1,10 @@
-# hello-world
+# apko-melange-devops-hello-world
 
 <!---
 Note: Do NOT edit README.md directly. Edit .github/README.tpl.md instead.
 -->
 
-[![CI status](https://github.com/KingBain/hello-world/actions/workflows/release.yaml/badge.svg)](https://github.com/KingBain/hello-world/actions/workflows/release.yaml)
+[![CI status](https://github.com/KingBain/apko-melange-devops-hello-world/actions/workflows/release.yaml/badge.svg)](https://github.com/KingBain/apko-melange-devops-hello-world/actions/workflows/release.yaml)
 
 Hello, world!
 
@@ -13,7 +13,7 @@ Hello, world!
 The image is available on `ghcr.io`:
 
 ```bash
-docker pull ghcr.io/kingbain/hello-world:latest
+docker pull ghcr.io/kingbain/apko-melange-devops-hello-world:latest
 ```
 
 ## Supported tags
@@ -32,7 +32,7 @@ All Chainguard Images are signed using [Sigstore](https://sigstore.dev)!
 To verify the image, download <a href="https://github.com/sigstore/cosign">cosign</a> and run:
 
 ```bash
-COSIGN_EXPERIMENTAL=1 cosign verify ghcr.io/kingbain/hello-world:20251230 | jq
+COSIGN_EXPERIMENTAL=1 cosign verify ghcr.io/kingbain/apko-melange-devops-hello-world:20251230 | jq
 ```
 
 > **Note:** The output will contain the specific digest and signature information for the build timestamped `20251230`.
