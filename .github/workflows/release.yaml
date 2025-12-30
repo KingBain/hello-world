@@ -130,6 +130,7 @@ jobs:
 
             # Push
             docker manifest push $target
+            cosign sign --yes "$target"
           done
 
   # ------------------------------------------------------------
