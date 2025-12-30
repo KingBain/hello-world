@@ -52,7 +52,7 @@ jobs:
       # Build APKs for the specific matrix architecture
       - uses: chainguard-dev/actions/melange-build@main
         with:
-          sign-with-temporary-key: false
+          sign-with-temporary-key: true
           signing-key-path: melange.rsa
           config: melange.yaml
           archs: ${{ matrix.arch }}
