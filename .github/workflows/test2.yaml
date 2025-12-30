@@ -41,7 +41,7 @@ jobs:
 
     - uses: chainguard-dev/actions/melange-build@main
       with:
-        sign-with-key: true
+        sign-with-temporary-key: false
         signing-key-path: ${{ github.workspace }}/melange.rsa
         config: melange.yaml
         archs: x86_64
