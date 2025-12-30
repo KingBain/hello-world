@@ -24,12 +24,7 @@ docker pull ghcr.io/kingbain/apko-melange-devops-hello-world:latest
 | `20251230` | `amd64` `arm64` `arm` |
 
 ## Signing
-
-All Chainguard Images are signed using [Sigstore](https://sigstore.dev)!
-
     
-<details>
-<br/>
 To verify the image, download <a href="https://github.com/sigstore/cosign">cosign</a> and run:
 
 ```bash
@@ -38,9 +33,6 @@ cosign verify \
   --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
   ghcr.io/kingbain/apko-melange-devops-hello-world:20251230 | jq
 ```
-  
-
-</details>
 
 ## Build
 
