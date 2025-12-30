@@ -10,8 +10,7 @@
 		"vscode": {
 			"extensions": [
 				"ms-azuretools.vscode-docker",
-				"redhat.vscode-yaml",
-				"chainguard.chainguard-vscode" 
+				"redhat.vscode-yaml"
 			]
 		}
 	},
