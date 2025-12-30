@@ -46,6 +46,15 @@ jobs:
         config: melange.yaml
         archs: x86_64
 
+    - name: Fix Package Permissions & Debug
+      run: |
+        # Melange runs as root, so we must claim the packages folder
+        sudo chown -R $USER packages
+        
+        # DEBUG: Verify the index is signed
+        echo "Checking content of x86_64 index:"
+        tar -tvf packages/x86_64/APKINDEX.tar.gz
+
     - uses: chainguard-images/actions/apko-build@main
       with:
         config: apko.yaml
