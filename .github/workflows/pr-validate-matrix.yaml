@@ -41,16 +41,16 @@ jobs:
         arch: [x86_64, aarch64, armv7]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.1
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v2.1.0
+        uses: docker/setup-qemu-action@v3.7.0
 
-      - uses: sigstore/cosign-installer@main
+      - uses: sigstore/cosign-installer@v4.0.0
 
 
       # Build APKs for the specific matrix architecture
-      - uses: chainguard-dev/actions/melange-build@main
+      - uses: chainguard-dev/actions/melange-build@v1.0.11
         with:
           sign-with-temporary-key: true
           signing-key-path: melange.rsa
@@ -58,7 +58,7 @@ jobs:
           archs: ${{ matrix.arch }}
 
       # Build the OCI Image tarball for this specific arch
-      - uses: chainguard-images/actions/apko-build@main
+      - uses: chainguard-images/actions/apko-build@v1.0.11
         with:
           config: apko.yaml
           tag: hello-world:${{ needs.setup.outputs.snapshot-date }}
@@ -67,7 +67,7 @@ jobs:
           source-date-epoch: ${{ needs.setup.outputs.snapshot-epoch }}
 
       # Upload the individual tarball, named by architecture
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: hello-world-${{ matrix.arch }}.tar
           path: ./output.tar
