@@ -130,7 +130,7 @@ jobs:
   # ------------------------------------------------------------
   # Job 4: Generate README
   # ------------------------------------------------------------
-generate-readme:
+  generate-readme:
     name: Generate README
     needs: [setup, manifest]
     runs-on: ubuntu-latest
