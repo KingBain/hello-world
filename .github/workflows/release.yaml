@@ -54,11 +54,11 @@ jobs:
             tag_suffix: arm
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.1
 
-      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v3.7.0
 
-      - uses: sigstore/cosign-installer@v4
+      - uses: sigstore/cosign-installer@v4.0.0
 
       # --------------------------------------------------------
       # Build APKs (single arch)
@@ -134,7 +134,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.1
 
       - name: Get repo name
         run: echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
