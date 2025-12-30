@@ -41,10 +41,14 @@ jobs:
         archs: x86_64,aarch64,armv7
         source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
 
+    - name: Load image
+      run: |
+        docker load < output.tar
+
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@0.33.1
       with:
-        input: ./output.tar
+        image-ref: hello-world:${{ steps.snapshot-date.outputs.date }}
         exit-code: '1'
         ignore-unfixed: true
         vuln-type: 'os,library'
